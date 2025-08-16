@@ -3,13 +3,13 @@ name: Responsible AI Monitoring
 on:
   schedule:
     - cron: "0 9 * * MON"   # every Monday 09:00 UTC
-  workflow_dispatch:        # allow manual runs from Actions tab
+  workflow_dispatch:
 
 jobs:
   audit:
     runs-on: ubuntu-latest
     permissions:
-      contents: write       # allow committing artifacts back
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -20,11 +20,19 @@ jobs:
         with:
           python-version: "3.10"
           cache: "pip"
+          cache-dependency-path: "requirements.txt"
+
+      - name: Verify files exist
+        run: |
+          pwd
+          ls -la
+          test -f requirements.txt && echo "✅ requirements.txt found" || (echo "❌ requirements.txt missing"; exit 1)
+          test -f src/train_and_audit.py && echo "✅ src/train_and_audit.py found" || (echo "❌ src/train_and_audit.py missing"; exit 1)
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pandas numpy scikit-learn fairlearn shap matplotlib packaging
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
 
       - name: Run audit script
         run: python src/train_and_audit.py
@@ -33,6 +41,7 @@ jobs:
         run: |
           git config user.name "RAI-Bot"
           git config user.email "actions@github.com"
-          git add artifacts governance
+          git add artifacts governance || true
           git commit -m "Automated weekly audit [skip ci]" || echo "No changes"
+          git pull --rebase || true
           git push
