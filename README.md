@@ -1,2 +1,26 @@
-# Responsible-AI-Evidence-Pack
-A demonstration of Responsible AI audits (fairness, explainability, robustness) aligned with NIST AI RMF and ISO/IEC 42001
+\# Responsible-AI-Evidence-Pack
+
+
+
+A hands-on demo of \*\*Responsible AI\*\* auditing for a tabular ML model (OpenML Adult).  
+
+It trains a model, runs a \*\*fairness audit\*\* (by sex), generates an \*\*explainability\*\* plot (fast SHAP / permutation fallback),
+
+and writes a \*\*governance audit trail\*\*. Aligned to \*\*NIST AI RMF (Map-Measure-Manage-Govern + Monitor)\*\* and \*\*ISO/IEC 42001\*\* (AI management system).
+
+
+
+---
+
+
+
+\## Quick start
+
+
+
+```bash
+
+python src/train\_and\_audit.py
+
+
+
