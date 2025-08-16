@@ -1,14 +1,27 @@
+name: Responsible AI Monitoring
+
+on:
+  # run by hand from the Actions tab
+  workflow_dispatch:
+  # run every Monday 09:00 UTC (optional – keep or remove)
+  schedule:
+    - cron: "0 9 * * MON"
+
+# allow the workflow to commit CSV/MD outputs back to the repo
+permissions:
+  contents: write
+
 jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'   # 👈 set a valid version here (3.9 or 3.10 works best)
+          python-version: "3.9"   # 3.9 or 3.10 both work well
 
       - name: Install dependencies
         run: |
