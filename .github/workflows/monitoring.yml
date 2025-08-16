@@ -2,7 +2,7 @@ name: Responsible AI Monitoring
 
 on:
   schedule:
-    - cron: "0 9 * * MON"
+    - cron: "0 9 * * MON"   # every Monday 09:00 UTC
   workflow_dispatch:
 
 jobs:
@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"   # <-- no cache here
+          python-version: "3.10"   # no caching to avoid the requirements glob error
 
       - name: Verify files exist
         run: |
