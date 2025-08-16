@@ -18,14 +18,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"   # no pip cache on purpose
+          python-version: "3.10"
 
       - name: Verify files exist
         run: |
           pwd
           ls -la
           test -f requirements.txt && echo "✅ requirements.txt found" || (echo "❌ requirements.txt missing"; exit 1)
-          test -f src/train_and_audit.py && echo "✅ src/train_and_audit.py found" || (echo "❌ src/train_and_audit.py missing"; exit 1)
+          test -f train_and_audit.py && echo "✅ train_and_audit.py found" || (echo "❌ train_and_audit.py missing"; exit 1)
 
       - name: Install dependencies
         run: |
@@ -38,7 +38,7 @@ jobs:
           mkdir -p governance
 
       - name: Run audit script
-        run: python src/train_and_audit.py
+        run: python train_and_audit.py
 
       - name: Commit artifacts
         run: |
