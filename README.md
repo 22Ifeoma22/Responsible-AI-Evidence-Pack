@@ -1,5 +1,6 @@
 \# Responsible-AI-Evidence-Pack
 
+![RAI Monitoring](https://github.com/22Ifeoma22/Responsible-AI-Evidence-Pack/actions/workflows/monitoring.yml/badge.svg)
 
 
 A hands-on demo of \*\*Responsible AI\*\* auditing for a tabular ML model (OpenML Adult).  
