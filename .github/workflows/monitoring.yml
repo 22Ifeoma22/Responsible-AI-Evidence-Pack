@@ -1,50 +1,24 @@
-name: Responsible AI Monitoring
-
-on:
-  schedule:
-    - cron: "0 9 * * MON"   # every Monday 09:00 UTC
-  workflow_dispatch:
-
 jobs:
   audit:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.10"   # no caching to avoid the requirements glob error
-
-      - name: Verify files exist
-        run: |
-          pwd
-          ls -la
-          test -f requirements.txt && echo "✅ requirements.txt found" || (echo "❌ requirements.txt missing"; exit 1)
-          test -f train_and_audit.py && echo "✅ train_and_audit.py found" || (echo "❌ train_and_audit.py missing"; exit 1)
+          python-version: '3.9'   # 👈 set a valid version here (3.9 or 3.10 works best)
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip
           pip install -r requirements.txt
-
-      - name: Ensure output folders exist
-        run: |
-          mkdir -p artifacts
-          mkdir -p governance
 
       - name: Run audit script
         run: python train_and_audit.py
 
       - name: Commit artifacts
-        run: |
-          git config user.name "RAI-Bot"
-          git config user.email "actions@github.com"
-          git add artifacts governance || true
-          git commit -m "Automated weekly audit [skip ci]" || echo "No changes"
-          git pull --rebase || true
-          git push
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Add audit results"
