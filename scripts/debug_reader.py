@@ -1,4 +1,7 @@
 import sys
+from pygments import highlight
+from pygments.lexers import PythonLexer
+from pygments.formatters import TerminalFormatter
 
 # Default range
 start, end = 100, 120
@@ -13,8 +16,11 @@ with open("scripts/train_and_audit.py", "r", encoding="utf-8") as f:
 
 print(f"\n--- Showing lines {start} to {end} from train_and_audit.py ---\n")
 
+# Collect code in the given range
+code_snippet = ""
 for i, ln in enumerate(lines, 1):
     if start <= i <= end:
-        # Print line number and actual code (no quotes, no \n)
-        print(f"{i:4d}: {ln}", end="")
-# debug_reader.py
+        code_snippet += f"{i:4d}: {ln}"
+
+# Highlight code
+print(highlight(code_snippet, PythonLexer(), TerminalFormatter()))
