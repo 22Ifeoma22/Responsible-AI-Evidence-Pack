@@ -14,9 +14,9 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
 from packaging import version
+import sklearn
+sk1_version = sklearn._version_
 
-from sklearn import __version__  as skl_version   # <-- delete this
-  
 # Fairness
 from fairlearn.metrics import MetricFrame, selection_rate, true_positive_rate, false_positive_rate
 
