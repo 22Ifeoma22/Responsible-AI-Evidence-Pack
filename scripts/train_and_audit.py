@@ -104,7 +104,9 @@ def main() -> None:
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", SimpleImputer(strategy="median"), num_cols),
-    from sklearn import __version__ as skl_version
+   import sklearn
+skl_version = sklearn.__version__
+
 from packaging import version
 
 if version.parse(skl_version) >= version.parse("1.2"):
