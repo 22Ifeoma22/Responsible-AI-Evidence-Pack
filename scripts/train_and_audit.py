@@ -130,8 +130,8 @@ clf = RandomForestClassifier(
     n_jobs=-1,
 )
 
-
-    pipe = Pipeline(steps=[
+def build_pipeline():
+     pipe = Pipeline(steps=[
         ("prep", preprocessor),
         ("clf", clf),
     ])
