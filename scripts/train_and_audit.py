@@ -100,19 +100,21 @@ def main() -> None:
     # Preprocessing + Model
     # -----------------------
     # Identify categorical vs numeric columns
-    cat_cols = X_train.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
-    num_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
+   # Identify categorical vs numeric columns
+cat_cols = X_train.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
+num_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
 
-    # Because some sklearn versions changed the arg name, use sparse=False for widest compatibility
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ("num", SimpleImputer(strategy="median"), num_cols),
+# OneHotEncoder arg name changed around sklearn 1.2; gate for compatibility
+from packaging import version
+import sklearn as sk
+skl_version = sk.__version__
 
 if version.parse(skl_version) >= version.parse("1.2"):
     ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
 else:
     ohe = OneHotEncoder(handle_unknown="ignore", sparse=False)
 
+# Single, complete ColumnTransformer definition
 preprocessor = ColumnTransformer(
     transformers=[
         ("num", SimpleImputer(strategy="median"), num_cols),
@@ -121,11 +123,13 @@ preprocessor = ColumnTransformer(
     remainder="drop",
 )
 
-    clf = RandomForestClassifier(
-        n_estimators=200,
-        random_state=42,
-        n_jobs=-1,
-    )
+# (then your model)
+clf = RandomForestClassifier(
+    n_estimators=200,
+    random_state=42,
+    n_jobs=-1,
+)
+
 
     pipe = Pipeline(steps=[
         ("prep", preprocessor),
