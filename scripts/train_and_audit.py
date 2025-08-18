@@ -1,78 +1,110 @@
+# scripts/train_and_audit.py
 import os
-import json
-import joblib
+from pathlib import Path
 import warnings
+
 import numpy as np
 import pandas as pd
-from pathlib import Path
 
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
 
+# Fairness
 from fairlearn.metrics import MetricFrame, selection_rate, true_positive_rate, false_positive_rate
 
+# Optional: SHAP (wrap in try/except so failures don't break the run)
 warnings.filterwarnings("ignore", category=UserWarning)
 
-ARTIFACTS_DIR = Path("artifacts")
-ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
-# --------------------------
-# 1) Load data
-# --------------------------
+# -----------------------
+# Utility paths
+# -----------------------
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = REPO_ROOT / "data"
+ARTIFACTS_DIR = REPO_ROOT / "artifacts"
+GOV_DIR = REPO_ROOT / "governance"
+
+ARTIFACTS_DIR.mkdir(exist_ok=True)
+GOV_DIR.mkdir(exist_ok=True)
+DATA_DIR.mkdir(exist_ok=True)
+
+
+# -----------------------
+# Load data
+# -----------------------
 def load_adult() -> pd.DataFrame:
     """
-    Load the Adult dataset. If you already have it in data/adult.csv, load from there.
-    Otherwise, we download from OpenML via pandas for a quick demo.
+    Loads Adult dataset.
+    - If a local CSV exists in data/, it uses that.
+    - Else, fetches from OpenML and saves a small copy locally.
     """
-    local_csv = Path("data") / "adult.csv"
+    local_csv = DATA_DIR / "adult.csv"
     if local_csv.exists():
         df = pd.read_csv(local_csv)
-    else:
-        # Fallback: try OpenML via fetch from URL hosted mirrors (basic demo).
-        url = "https://raw.githubusercontent.com/amueller/ml-workshop-1-of-4/master/datasets/adult.csv"
-        df = pd.read_csv(url)
-    # Normalize column names a bit (strip, lower)
-    df.columns = [c.strip().lower().replace(" ", "_") for c in df.columns]
+        return df
+
+    # Fallback: fetch from OpenML
+    from sklearn.datasets import fetch_openml
+    adult = fetch_openml("adult", version=2, as_frame=True)
+    df = adult.frame.copy()
+    # Normalize column names for consistency
+    df.columns = [c.strip().replace(" ", "_").replace("-", "_") for c in df.columns]
+    # Save a local copy for reproducibility
+    df.to_csv(local_csv, index=False)
     return df
 
-def prepare_xy(df: pd.DataFrame, target_col: str = "income"):
 
-    # Ensure target exists; common target name is 'income' in adult (<=50K / >50K)
+# -----------------------
+# Main
+# -----------------------
+def main() -> None:
+    print("Loading dataset...")
+    df = load_adult()
+
+    # Target and sensitive attributes (adjust if your local CSV uses other names)
+    # OpenML Adult uses "class" as target, with values like <=50K, >50K
+    target_col = "class" if "class" in df.columns else "income"
+    sensitive_col = "sex" if "sex" in df.columns else "Sex"
+
     if target_col not in df.columns:
-        raise ValueError(f"Target column '{target_col}' not found in data. Columns: {df.columns.tolist()}")
+        raise ValueError(f"Could not find target column '{target_col}' in dataset columns: {df.columns.tolist()}")
+    if sensitive_col not in df.columns:
+        raise ValueError(f"Could not find sensitive column '{sensitive_col}' in dataset columns: {df.columns.tolist()}")
 
-    y = df[target_col].astype(str)  # keep as string classification target
+    # Drop rows with missing target
+    df = df.dropna(subset=[target_col]).reset_index(drop=True)
+
+    # Features/labels
     X = df.drop(columns=[target_col])
+    y = df[target_col].astype(str)  # make sure it's string for classification
 
-    # Some adult CSVs call sensitive attribute 'sex'
-    sensitive_col = "sex" if "sex" in X.columns else None
-    sensitive = X[sensitive_col].copy() if sensitive_col else None
+    # Keep a copy of sensitive feature for fairness calc later
+    sensitive_series = X[sensitive_col].astype(str)
 
-    return X, y, sensitive_col, sensitive
+    # Train/test split
+    # You can stratify by the label for balanced classes
+    print("Splitting data...")
+    X_train, X_test, y_train, y_test, A_train, A_test = train_test_split(
+        X, y, sensitive_series, test_size=0.25, random_state=42, stratify=y
+    )
 
-# --------------------------
-# 2) Build pipeline with OHE
-# --------------------------
-def build_pipeline(X: pd.DataFrame):
+    # -----------------------
+    # Preprocessing + Model
+    # -----------------------
     # Identify categorical vs numeric columns
-    cat_cols = [c for c in X.columns if X[c].dtype == "object"]
-    num_cols = [c for c in X.columns if c not in cat_cols]
+    cat_cols = X_train.select_dtypes(include=["object", "category", "bool"]).columns.tolist()
+    num_cols = X_train.select_dtypes(include=[np.number]).columns.tolist()
 
-    # OneHotEncoder param changed in sklearn ≥1.2: use sparse_output
-    try:
-        ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
-    except TypeError:
-        # for older sklearn
-        ohe = OneHotEncoder(handle_unknown="ignore", sparse=False)
-
-    preproc = ColumnTransformer(
+    # Because some sklearn versions changed the arg name, use sparse=False for widest compatibility
+    preprocessor = ColumnTransformer(
         transformers=[
-            ("cat", ohe, cat_cols),
-            ("num", "passthrough", num_cols),
+            ("num", SimpleImputer(strategy="median"), num_cols),
+            ("cat", OneHotEncoder(handle_unknown="ignore", sparse=False), cat_cols),
         ],
         remainder="drop",
     )
@@ -83,109 +115,92 @@ def build_pipeline(X: pd.DataFrame):
         n_jobs=-1,
     )
 
-    pipe = Pipeline(steps=[("prep", preproc), ("clf", clf)])
-    return pipe
+    pipe = Pipeline(steps=[
+        ("prep", preprocessor),
+        ("clf", clf),
+    ])
 
-# --------------------------
-# 3) Fairness metrics helper
-# --------------------------
-def run_fairness(y_true, y_pred, sensitive: pd.Series, out_path: Path):
+    # Train
+    print("Training model...")
+    pipe.fit(X_train, y_train)
+
+    # Evaluate
+    y_pred = pipe.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Accuracy: {acc:.3f}")
+
+    # -----------------------
+    # Fairness audit
+    # -----------------------
+    print("Running fairness audit...")
     metrics = {
         "selection_rate": selection_rate,
         "tpr": true_positive_rate,
         "fpr": false_positive_rate,
     }
-    mf = MetricFrame(metrics=metrics, y_true=y_true, y_pred=y_pred, sensitive_features=sensitive)
-    mf_df = mf.by_group
-    mf_df.to_csv(out_path, index=True)
+    mf = MetricFrame(metrics=metrics, y_true=y_test, y_pred=y_pred, sensitive_features=A_test)
+    fairness_df = mf.by_group
+    print(fairness_df)
 
-# --------------------------
-# 4) Optional SHAP
-# --------------------------
-def try_shap_summary(pipe: Pipeline, X_train: pd.DataFrame, out_path: Path):
-    # SHAP is optional; try it, but don’t fail the pipeline if it's missing
+    # Save fairness audit CSV
+    fairness_path = ARTIFACTS_DIR / "fairness_audit.csv"
+    fairness_df.to_csv(fairness_path, index=True)
+    print(f"Saved fairness audit -> {fairness_path}")
+
+    # -----------------------
+    # Optional: SHAP summary
+    # -----------------------
+    shap_path = ARTIFACTS_DIR / "shap_summary.png"
     try:
         import shap
-        explainer = shap.TreeExplainer(pipe.named_steps["clf"])
-        # Transform training data through preprocessor
-        Xt = pipe.named_steps["prep"].transform(X_train)
-        shap_values = explainer.shap_values(Xt)
-        shap.summary_plot(shap_values, Xt, show=False)
         import matplotlib.pyplot as plt
+
+        # Get a small, preprocessed sample to speed up SHAP
+        X_small = X_test.sample(n=min(100, len(X_test)), random_state=42)
+        X_small_proc = pipe.named_steps["prep"].transform(X_small)
+
+        # For tree models, TreeExplainer is fast
+        explainer = shap.TreeExplainer(pipe.named_steps["clf"])
+        shap_values = explainer.shap_values(X_small_proc)
+
+        plt.figure(figsize=(10, 6))
+        # shap.summary_plot works with numpy arrays; feature names come from the ColumnTransformer
+        # Build feature names for OHE output:
+        ohe = pipe.named_steps["prep"].named_transformers_["cat"]
+        ohe_features = []
+        if hasattr(ohe, "get_feature_names_out"):
+            ohe_features = ohe.get_feature_names_out(cat_cols).tolist()
+        else:
+            # fallback if using older sklearn
+            ohe_features = [f"{c}_{i}" for c in cat_cols for i in range(1000)]  # not perfect, but avoids crash
+
+        feature_names = num_cols + ohe_features
+        shap.summary_plot(shap_values[1] if isinstance(shap_values, list) else shap_values,
+                          X_small_proc, feature_names=feature_names, show=False)
         plt.tight_layout()
-        plt.savefig(out_path, dpi=150)
+        plt.savefig(shap_path, dpi=150)
         plt.close()
-        return True
+        print(f"Saved SHAP summary -> {shap_path}")
     except Exception as e:
-        print(f"[INFO] SHAP not available or failed: {e}")
-        return False
+        print(f"[WARN] Skipping SHAP plot: {e}")
 
-# --------------------------
-# 5) Main
-# --------------------------
-def main():
-    print("📥 Loading dataset...")
-    df = load_adult()
-    X, y, sensitive_col, sensitive = prepare_xy(df, target_col="income")
-    print(f"Data shape: {df.shape}. Target positive rate: {(y == '>50K').mean():.3f} (if 'income').")
-
-    print("🔀 Splitting...")
-    stratify = y if y.nunique() > 1 else None
-    X_train, X_test, y_train, y_test, s_train, s_test = train_test_split(
-        X, y, sensitive, test_size=0.2, random_state=42, stratify=stratify
-    )
-
-    print("🏗️ Building pipeline...")
-    pipe = build_pipeline(X_train)
-
-    print("🏃 Training model...")
-    pipe.fit(X_train, y_train)
-
-    print("🔎 Predicting...")
-    y_pred = pipe.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
-    print(f"✅ Accuracy: {acc:.3f}")
-
-    # Save metrics JSON
-    (ARTIFACTS_DIR / "metrics.json").write_text(json.dumps({"accuracy": acc}, indent=2))
-
-    # Save model (optional)
-    joblib.dump(pipe, ARTIFACTS_DIR / "model.joblib")
-
-    # Fairness audit (if we had a sensitive column)
-    if sensitive_col is not None:
-        print(f"⚖️ Running fairness audit by '{sensitive_col}'...")
-        out_csv = ARTIFACTS_DIR / "fairness_audit.csv"
-        run_fairness(y_test, y_pred, s_test, out_csv)
-        print(f"📄 Saved fairness audit -> {out_csv}")
+    # -----------------------
+    # Governance audit trail
+    # -----------------------
+    md = []
+    md.append("## Audit Run\n")
+    md.append(f"- Accuracy: **{acc:.3f}**\n")
+    md.append(f"- Fairness audit: `{fairness_path.name}`\n")
+    if shap_path.exists():
+        md.append(f"- Importance plot: `{shap_path.name}`\n")
     else:
-        print("⚠️ No sensitive column found; skipping fairness audit.")
+        md.append("- Importance plot: (not generated in this run)\n")
 
-    # Explainability attempt
-    print("🧠 Trying SHAP summary...")
-    shap_ok = try_shap_summary(pipe, X_train, ARTIFACTS_DIR / "shap_summary.png")
-    if shap_ok:
-        print("🖼️ Saved SHAP summary -> artifacts/shap_summary.png")
-    else:
-        # Fallback: simple permutation importance
-        try:
-            from sklearn.inspection import permutation_importance
-            import matplotlib.pyplot as plt
+    audit_md_path = GOV_DIR / "audit_trail.md"
+    with open(audit_md_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(md))
+    print(f"Saved governance audit -> {audit_md_path}")
 
-            Xt = pipe.named_steps["prep"].transform(X_test)
-            result = permutation_importance(pipe.named_steps["clf"], Xt, y_test, n_repeats=3, random_state=42, n_jobs=-1)
-            imp = result.importances_mean
-            plt.figure(figsize=(6,4))
-            plt.bar(range(len(imp)), imp)
-            plt.title("Permutation Importance (proxy)")
-            plt.tight_layout()
-            plt.savefig(ARTIFACTS_DIR / "feature_importance.png", dpi=150)
-            plt.close()
-            print("🖼️ Saved permutation importance -> artifacts/feature_importance.png")
-        except Exception as e:
-            print(f"[INFO] Permutation importance also failed: {e}")
-
-    print("✅ Done.")
 
 if __name__ == "__main__":
     main()
