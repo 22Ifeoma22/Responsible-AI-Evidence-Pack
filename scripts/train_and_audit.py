@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
+from packaging import version
 
   
 skl_version = sklearn.__version__
@@ -107,8 +108,6 @@ def main() -> None:
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", SimpleImputer(strategy="median"), num_cols),
-
-from packaging import version
 
 if version.parse(skl_version) >= version.parse("1.2"):
     ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
