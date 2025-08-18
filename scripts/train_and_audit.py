@@ -104,7 +104,22 @@ def main() -> None:
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", SimpleImputer(strategy="median"), num_cols),
-            ("cat", OneHotEncoder(handle_unknown="ignore", sparse=False), cat_cols),
+    from sklearn import __version__ as skl_version
+from packaging import version
+
+if version.parse(skl_version) >= version.parse("1.2"):
+    ohe = OneHotEncoder(handle_unknown="ignore", sparse_output=False)
+else:
+    ohe = OneHotEncoder(handle_unknown="ignore", sparse=False)
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        ("num", SimpleImputer(strategy="median"), num_cols),
+        ("cat", ohe, cat_cols),
+    ],
+    remainder="drop",
+)
+     
         ],
         remainder="drop",
     )
