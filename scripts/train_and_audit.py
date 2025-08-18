@@ -120,10 +120,6 @@ preprocessor = ColumnTransformer(
     ],
     remainder="drop",
 )
-     
-        ],
-        remainder="drop",
-    )
 
     clf = RandomForestClassifier(
         n_estimators=200,
