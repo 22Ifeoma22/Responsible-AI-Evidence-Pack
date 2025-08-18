@@ -14,6 +14,9 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score
 
+  
+skl_version = sklearn.__version__
+
 # Fairness
 from fairlearn.metrics import MetricFrame, selection_rate, true_positive_rate, false_positive_rate
 
@@ -104,8 +107,6 @@ def main() -> None:
     preprocessor = ColumnTransformer(
         transformers=[
             ("num", SimpleImputer(strategy="median"), num_cols),
-   import sklearn
-skl_version = sklearn.__version__
 
 from packaging import version
 
