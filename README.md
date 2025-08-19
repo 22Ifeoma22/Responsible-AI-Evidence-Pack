@@ -30,3 +30,4 @@ python scripts/train_and_audit.py --bias-attr sex --explain shap --outdir artifa
 
 # 3) (Recommended) Run the advanced audit (multi-attribute + SHAP scaffold)
 python scripts/advanced_train_and_audit.py --bias-attrs sex race age --shap --outdir artifacts --seed 42
+<img width="1600" height="960" alt="fairness_gaps" src="https://github.com/user-attachments/assets/4f5b7adf-ecb4-4ffe-8e2b-7b7efbc788e1" />
