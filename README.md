@@ -23,6 +23,21 @@ It **trains** a model, runs a **fairness audit**, generates **explainability** v
 ![Top Features (PFI)](artifacts/feature_importance.png)
 [Interactive explainer](artifacts/explain_top_features.html)
 
+
+## Results
+
+Fairness gaps (lower is better; 0 = parity):  
+![Fairness Gaps](artifacts/fairness_gaps.png)
+
+Top feature impact (PFI):  
+![Top Features](artifacts/feature_importance.png)
+
+Interactive explanation:  
+[explainer HTML](artifacts/explain_top_features.html)
+
+Reference screenshot (for GitHub preview):  
+<img width="1600" height="960" alt="Fairness_gaps" src="https://github.com/user-attachments/assets/4f5b7adf-ecb4-4ffe-8e2b-7b7efbc788e1" />
+
 ##  Quickstart
 
 ```bash
