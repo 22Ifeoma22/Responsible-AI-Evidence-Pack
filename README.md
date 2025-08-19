@@ -20,9 +20,17 @@ It **trains** a model, runs a **fairness audit**, generates **explainability** v
 
 ## Results
 
-- ![Fairness Gaps](artifacts/fairness_gaps.png)  
-- ![Top Features (PFI)](artifacts/feature_importance.png)  
-- [Interactive explainer](artifacts/explain_top_features.html)  
+## Results
+
+- **Fairness Gaps**  
+  <img src="artifacts/fairness_gaps.png" alt="Fairness Gaps" width="600"/>
+
+- **Top Features (PFI)**  
+  <img src="artifacts/feature_importance.png" alt="Top Features" width="600"/>
+
+- **Interactive Explainer**  
+  👉 [View explainer here](artifacts/explain_top_features.html)
+
 
 ---
 
