@@ -19,7 +19,6 @@ It **trains** a model, runs a **fairness audit**, generates **explainability** v
 ---
 ##  Results
 
-
 ![Fairness Gaps](artifacts/fairness_gaps.png)
 ![Top Features (PFI)](artifacts/feature_importance.png)
 [Interactive explainer](artifacts/explain_top_features.html)
