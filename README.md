@@ -17,7 +17,8 @@ It **trains** a model, runs a **fairness audit**, generates **explainability** v
 - **CI ready:** GitHub Actions to run the audit and upload artifacts on every push/PR
 
 ---
-## 📈 Results
+##  Results
+
 
 ![Fairness Gaps](artifacts/fairness_gaps.png)
 ![Top Features (PFI)](artifacts/feature_importance.png)
