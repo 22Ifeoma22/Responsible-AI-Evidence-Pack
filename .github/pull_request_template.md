@@ -1,43 +1,33 @@
-## 📌 Description
-Please include a summary of the changes and the related issue.  
+# Pull Request Template
 
-Fixes # (issue number, if applicable)
+## Summary
+Provide a short summary of the changes introduced by this PR.
 
----
+## Related Issues
+- Closes #[ISSUE_ID] (if applicable)
 
-## 🔨 Type of change
-Check the relevant options with an `x`:
+## Changes Made
+- [ ] New feature added  
+- [ ] Bug fix  
+- [ ] Documentation update  
+- [ ] Governance/compliance update  
 
-- [ ] Bug fix (non-breaking change that fixes an issue)
-- [ ] New feature (non-breaking change that adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Other (please describe):
+## Governance & Responsible AI Checks
+- [ ] Fairness & Bias Audit (Aequitas/Fairlearn results attached)  
+- [ ] Explainability (SHAP/LIME/Counterfactuals documented)  
+- [ ] Privacy & Security (GDPR / ISO 27001 aligned)  
+- [ ] Accountability (Change logged in Evidence Pack)  
 
----
-
-## 📸 Screenshots (if applicable)
-Add screenshots or terminal outputs to show what’s changed.
-
----
-
-## 🧪 How Has This Been Tested?
-- [ ] Unit tests
-- [ ] Integration tests
-- [ ] Manual testing  
-Explain the testing steps you took:  
+## Checklist
+- [ ] Code is tested and passes locally  
+- [ ] Documentation updated  
+- [ ] No sensitive data or secrets committed  
+- [ ] Reviewer(s) auto-assigned by CODEOWNERS  
 
 ---
 
-## ✅ Checklist
-- [ ] My code follows the project’s style guidelines  
-- [ ] I have performed a self-review of my own code  
-- [ ] I have commented my code, especially in hard-to-understand areas  
-- [ ] I have added tests that prove my fix is effective or that my feature works  
-- [ ] New and existing unit tests pass locally  
-- [ ] Documentation has been updated (if applicable)  
-
----
-
-## 🤝 Reviewer Notes
-Anything special the reviewer should pay attention to?
+### Reviewer Guidance
+Please check:
+1. Code correctness  
+2. Evidence pack alignment with ISO 42001 & NIST AI RMF  
+3. Compliance with Responsible AI principles  
