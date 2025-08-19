@@ -37,4 +37,10 @@ pip install -r requirements.txt
 python scripts/train_and_audit.py --bias-attr sex --explain shap --outdir artifacts --seed 42
 
 # 3) (Recommended) Run the advanced audit (multi-attribute + SHAP scaffold)
+# 3) (Recommended) Run the advanced audit (multi-attribute + SHAP scaffold)
+
+python scripts/advanced_train_and_audit.py --bias-attrs sex race age --shap --outdir artifacts --seed 42
+
+<img width="1600" height="960" alt="Fairness_gaps" src="https://github.com/user-attachments/assets/4f5b7adf-ecb4-4ffe-8e2b-7b7efbc788e1" />
+
 python scripts/advanced_train_and_audit.py --bias-attrs sex race age --explain shap --outdir artifacts --seed 42
