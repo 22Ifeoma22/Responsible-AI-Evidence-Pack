@@ -1,11 +1,32 @@
-# Responsible AI Evidence Pack
+# Responsible-AI Evidence Pack
 
-Automated auditing for fairness, explainability, and governance.
+[![CI – Responsible AI Monitoring](https://github.com/22Ifeoma22/Responsible-AI-Evidence-Pack/actions/workflows/ci.yml/badge.svg)](https://github.com/22Ifeoma22/Responsible-AI-Evidence-Pack/actions)
+![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-## Fairness Audit Example
-![Fairness Gaps](artifacts/fairness_gaps.png)
+A hands-on, reproducible demo of **Responsible AI** auditing for a tabular model (OpenML Adult).  
+It **trains** a model, runs a **fairness audit**, generates **explainability** visuals, and writes a **governance audit trail** aligned to **NIST AI RMF 1.0** (Map–Measure–Manage–Monitor) and **ISO/IEC 42001** (AI Management System).
 
-## Explainability (SHAP)
-![Top Features](artifacts/feature_importance.png)
+---
 
- Detailed audit trail is in `/artifacts/` and governance mapping in `/governance/`.
+##  What you get
+
+- **Automated pipeline:** train → metrics → fairness (by one or more attributes) → explainability (PFI + SHAP optional) → audit JSON  
+- **Visuals:** fairness gaps & top feature impact ready for README/slide decks  
+- **Governance pack:** model card, data card, risk register, NIST/ISO mapping  
+- **CI ready:** GitHub Actions to run the audit and upload artifacts on every push/PR
+
+---
+
+##  Quickstart
+
+```bash
+# 1) Environment
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# 2) Run the basic demo (already in this repo)
+python scripts/train_and_audit.py --bias-attr sex --explain shap --outdir artifacts --seed 42
+
+# 3) (Recommended) Run the advanced audit (multi-attribute + SHAP scaffold)
+python scripts/advanced_train_and_audit.py --bias-attrs sex race age --shap --outdir artifacts --seed 42
